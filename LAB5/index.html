@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Internetprogramming shop</title>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="main.css">
+<script>
+fetch('product.json')
+  .then( response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then( json => initialize(json) )
+  .catch( err => console.error(`Fetch problem: ${err.message}`) );
+
+  categoryGroup = [];
+  finalGroup = [];
+  let displayGroup = [];
+  let displaycount = 0;
+  
+
+function initialize(products) {
+  const category = document.querySelector('#category');
+  const searchTerm = document.querySelector('#searchTerm');
+  const searchBtn = document.querySelector('button');
+  const main = document.querySelector('.right');
+
+  let lastCategory = category.value;
+  let lastSearch = '';
+
+  let categoryGroup;
+  let finalGroup;
+
+  finalGroup = products;
+  updateDisplay();
+
+
+  searchBtn.addEventListener('click', Category);
+
+  window.onscroll = function() {
+    if(window.scrollY + window.innerHeight + 5 >= document.body.offsetHeight){
+        infinitescroll();
+    }
+  };
+
+  function Category(e) {
+    e.preventDefault();
+
+    categoryGroup = [];
+    finalGroup = [];
+
+    if (category.value === lastCategory && searchTerm.value.trim() === lastSearch) {
+      return;
+    } else {
+      lastCategory = category.value;
+      lastSearch = searchTerm.value.trim();
+
+      if (category.value === 'All') {
+        categoryGroup = products;
+        selectProducts();
+      }
+      else {
+        const lowerCaseType = category.value.toLowerCase();
+        categoryGroup = products.filter( product => product.type === lowerCaseType );
+        selectProducts();
+      }
+    }
+  }
+
+  function selectProducts() {
+    if (searchTerm.value.trim() === '') {
+      finalGroup = categoryGroup;
+    } else {
+      const lowerCaseSearchTerm = searchTerm.value.trim().toLowerCase();
+      finalGroup = categoryGroup.filter( product => product.name.includes(lowerCaseSearchTerm));
+    }
+    updateDisplay();
+  }
+
+  function updateDisplay() {
+    displaycount = 0;
+
+    while (main.firstChild) {
+      main.removeChild(main.firstChild);
+    }
+
+    if (finalGroup.length === 0) {
+      const para = document.createElement('p');
+      para.textContent = 'No results to display!';
+      main.appendChild(para);
+    } else {
+      displayGroup = finalGroup.slice(displaycount, displaycount + 4);
+      displaycount += 4;
+      for (const product of displayGroup) {
+        fetchBlob(product);
+      }
+    }
+  }
+
+
+  function fetchBlob(product) {
+    const url = `images/${product.image}`;
+    fetch(url)
+      .then( response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+        return response.blob();
+      })
+      .then( blob => showProduct(blob, product) )
+      .catch( err => console.error(`Fetch problem: ${err.message}`) );
+  }
+
+  function showProduct(blob, product) {
+    const objectURL = URL.createObjectURL(blob);
+    const section = document.createElement('section');
+    const image = document.createElement('img');
+    const heading = document.createElement('h3');
+    const para = document.createElement('p');
+
+    section.setAttribute('class', product.type);
+
+    heading.textContent = product.name.replace(product.name.charAt(0), product.name.charAt(0).toUpperCase());
+    para.textContent = product.explain;
+    heading.setAttribute('class', "hide");
+    para.setAttribute('class', "hide");
+  
+
+    image.src = objectURL;
+    image.alt = product.name;
+
+    main.appendChild(section);
+    section.appendChild(image);
+    section.appendChild(heading);
+    section.appendChild(para);
+    section.addEventListener('click', hiding);
+
+  }
+
+  function hiding(e) {
+    e.preventDefault();
+    h3 = this.querySelector('h3');
+    p = this.querySelector('p');
+    if (h3.getAttribute('class') === 'hide') {
+      h3.removeAttribute('class');
+      p.removeAttribute('class');
+    }
+    else {
+      h3.setAttribute('class', "hide");
+      p.setAttribute('class', "hide");
+    }
+  }
+
+  function infinitescroll() {
+    console.info(displayGroup, finalGroup);
+
+    if (finalGroup.length === 0) {
+      const para = document.createElement('p');
+      para.textContent = 'No results to display!';
+      main.appendChild(para);
+    } else {
+      displayGroup = finalGroup.slice(displaycount, displaycount + 4);
+      displaycount +=4;
+      for (const product of displayGroup) {
+        fetchBlob(product);
+      }
+    }
+  }
+}
+</script>
+</head>
+
+<body>
+    <header class="flexheader">
+        <h1 class="animation">안녕하세요 인프샵입니다</h1>
+    </header>
+    <nav class="flexnav">
+        <a href="index.html">메인페이지</a>
+        <a href="login.html">로그인</a>
+        <a href="signup.html">회원가입</a>
+    </nav>
+    <div class="flexvert">
+        <aside>
+          <form>
+            <div>
+              <label for="category">Choose a category:</label>
+              <select id="category">
+                <option selected>All</option>
+                <option>cat</option>
+                <option>dog</option>
+                <option>bird</option>
+                <option>hamster</option>
+              </select>
+            </div>
+            <p/>
+            <div>
+              <label for="searchTerm">Enter search term:</label>
+              <input type="text" id="searchTerm" placeholder="cat">
+            </div>
+            <p/>
+            <div>
+              <button>Filter results</button>
+            </div>
+          </form>
+        </aside>
+        <div class="right">
+
+        </div>
+    </div>
+</body>
+</html>
